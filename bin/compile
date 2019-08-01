@@ -36,31 +36,31 @@ chmod u+x $JQ_EXECUTABLE
 
 
 echo "-----> Parsing static.json"
-$JQ_EXECUTABLE -r .root $CONFIG
+$JQ_EXECUTABLE -r . $CONFIG
 
 
 echo "-----> Downloading releases"
-ROOT=$($JQ_EXECUTABLE -r .root $CONFIG)
+STATIC_ROOT=$($JQ_EXECUTABLE -r .root $CONFIG)
 
 for release in $(cat $CONFIG | $JQ_EXECUTABLE -c '.releases[]'); do
   _jq() {
-    echo ${release} | jq -r ${1}
+    echo ${release} | $JQ_EXECUTABLE -r ${1}
   }
 
-  local NAME=$(_jq '.name')
-  local REPO=$(_jq '.repository')
-  local TAG=$(_jq '.tag')
+  RELEASE_NAME=$(_jq '.name')
+  RELEASE_REPO=$(_jq '.repository')
+  RELEASE_TAG=$(_jq '.tag')
 
-  local RELEASE_DIR="$BUILD_DIR/$ROOT/$NAME"
+  RELEASE_DIR="$BUILD_DIR/$STATIC_ROOT/$RELEASE_NAME"
 
-  echo "name: $NAME, repo: $REPO, tag: $TAG, release_dir: $RELEASE_DIR"
+  echo "name: $RELEASE_NAME, repo: $RELEASE_REPO, tag: $RELEASE_TAG, release_dir: $RELEASE_DIR"
   # download the static files
-  # $FETCH_EXECUTABLE --repo=$REPO --tag=$TAG $RELEASE_DIR
+  # $FETCH_EXECUTABLE --repo=$RELEASE_REPO --tag=$RELEASE_TAG $RELEASE_DIR
 
   # download the assets
   # for asset in $(echo {release} | jq -c '.assets[]'); do
-    # local ASSET_NAME=asset
-    # $FETCH_EXECUTABLE --repo=$REPO --tag=$TAG --release-asset=$ASSET_NAME $RELEASE_DIR
+    # RELEASE_ASSET_NAME=asset
+    # $FETCH_EXECUTABLE --repo=$RELEASE_REPO --tag=$RELEASE_TAG --release-asset=$RELEASE_ASSET_NAME $RELEASE_DIR
   # done
 done
 
