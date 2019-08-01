@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# bin/compile <build-dir> <cache-dir> <env-dir>
+
+set -e
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+BUILDPACK_DIR=$(dirname $(dirname $0))
+GITHUB_OAUTH_TOKEN=$(cat $ENV_DIR/GITHUB_OAUTH_TOKEN)
+
+HEROKU_STACK="cedar-18"
+BIN_DIR="$CACHE_DIR/$HEROKU_STACK"
+
+CONFIG="$BUILD_DIR/static.json"
+
+echo "-----> Installing jq v1.6 for parsing JSON"
+# https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+JQ_VERSION="jq-1.6"
+JQ_FILENAME="jq-linux64"
+JQ_EXECUTABLE="$BIN_DIR/$JQ_FILENAME"
+JQ_DOWNLOAD_URL="https://github.com/stedolan/jq/releases/download/$JQ_VERSION/$JQ_FILENAME"
+curl -L -O -k $JQ_DOWNLOAD_URL
+mv $JQ_FILENAME $JQ_EXECUTABLE
+chmod u+x $JQ_EXECUTABLE
+
+echo "-----> Installing Fetch v0.3.5 for easy Github API requests"
+# https://github.com/gruntwork-io/fetch/releases/download/v0.3.5/fetch_linux_amd64
+FETCH_VERSION="v0.3.5"
+FETCH_FILENAME="fetch_linux_amd64"
+FETCH_EXECUTABLE="$BIN_DIR/$FETCH_FILENAME"
+FETCH_DOWNLOAD_URL="https://github.com/gruntwork-io/fetch/releases/download/$FETCH_VERSION/$FETCH_FILENAME"
+curl -L -O -k $FETCH_DOWNLOAD_URL
+mv $FETCH_FILENAME "$BIN_DIR/$FETCH_FILENAME"
+chmod u+x $JQ_EXECUTABLE
+
+echo "-----> Parsing static.json"
+$JQ_EXECUTABLE -r .root $CONFIG
+
+echo "-----> Downloading releases"
+ROOT=$($JQ_EXECUTABLE -r .root $CONFIG)
+
+for release in $(cat $CONFIG | $JQ_EXECUTABLE -c '.releases[]'); do
+  _jq() {
+    echo ${release} | jq -r ${1}
+  }
+
+  local NAME=$(_jq '.name')
+  local REPO=$(_jq '.repository')
+  local TAG=$(_jq '.tag')
+
+  local RELEASE_DIR="$BUILD_DIR/$ROOT/$NAME"
+
+  echo "name: $NAME, repo: $REPO, tag: $TAG, release_dir: $RELEASE_DIR"
+  # download the static files
+  # $FETCH_EXECUTABLE --repo=$REPO --tag=$TAG $RELEASE_DIR
+
+  # download the assets
+  # for asset in $(echo {release} | jq -c '.assets[]'); do
+    # local ASSET_NAME=asset
+    # $FETCH_EXECUTABLE --repo=$REPO --tag=$TAG --release-asset=$ASSET_NAME $RELEASE_DIR
+  # done
+done
+
+dd if=/dev/urandom of=file.txt bs=1048576 count=1000
+
+exit 0

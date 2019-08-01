@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# bin/detect <build-dir>
+
+BUILD_DIR=$1
+
+if [ ! -f "$BUILD_DIR/static.json" ]; then
+    exit 1
+fi
+
+echo 'Static curriculum HTML'
+exit 0
