@@ -52,19 +52,17 @@ for release in $(cat $CONFIG | $JQ_EXECUTABLE -c '.releases[]'); do
   RELEASE_TAG=$(_jq '.tag')
 
   RELEASE_DIR="$BUILD_DIR/$STATIC_ROOT/$RELEASE_NAME"
+  mkdir -p $RELEASE_DIR
+  echo "        Downloading release at $RELEASE_TAG from $RELEASE_REPO"
 
-  echo "name: $RELEASE_NAME, repo: $RELEASE_REPO, tag: $RELEASE_TAG, release_dir: $RELEASE_DIR"
-  # download the static files
-  # $FETCH_EXECUTABLE --repo=$RELEASE_REPO --tag=$RELEASE_TAG $RELEASE_DIR
+  $FETCH_EXECUTABLE --github-oauth-token=$GITHUB_OAUTH_TOKEN --repo=$RELEASE_REPO --tag=$RELEASE_TAG $RELEASE_DIR
 
   # download the assets
-  # for asset in $(echo {release} | jq -c '.assets[]'); do
-    # RELEASE_ASSET_NAME=asset
-    # $FETCH_EXECUTABLE --repo=$RELEASE_REPO --tag=$RELEASE_TAG --release-asset=$RELEASE_ASSET_NAME $RELEASE_DIR
-  # done
+  for asset in $(echo ${release} | $JQ_EXECUTABLE -c -r '.assets[]'); do
+    RELEASE_ASSET_NAME=${asset}
+    echo "        Downloading release asset $RELEASE_ASSET_NAME from $RELEASE_REPO"
+    $FETCH_EXECUTABLE --repo="$RELEASE_REPO" --tag="$RELEASE_TAG" --release-asset="$RELEASE_ASSET_NAME" $RELEASE_DIR
+  done
 done
-
-echo "-----> Creating a 1GB text file to test slug size"
-dd if=/dev/urandom of=file.txt bs=1048576 count=1000
 
 exit 0
